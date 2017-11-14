@@ -1,6 +1,5 @@
 '''
 Created on Nov 12, 2017
-
 @author: DougBrownWin
 '''
 
@@ -186,7 +185,7 @@ if __name__ == '__main__':
             
         
         
-        
+                
         show_world(ax, n)
 
 
@@ -194,13 +193,3 @@ if __name__ == '__main__':
 
 
 
-
-
-
-
-
-
-
-
-
-    
