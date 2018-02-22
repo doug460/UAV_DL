@@ -2,14 +2,35 @@
 Created on Jan 29, 2018
 
 @author: DougBrownWin
+
+
 '''
 
-if __name__ == '__main__':
-    pass
+import numpy as np
 
-    import numpy as np
-    
-    
-    s = 5
-    print(np.identity(16)[s])
-    print(np.identity(16)[s:s+1])
+
+if __name__ == '__main__':
+    array = np.zeros([1,4])
+    print(np.arange(0,np.shape(array)[0]))
+    print(np.shape(array)[1])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
