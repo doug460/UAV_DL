@@ -7,6 +7,7 @@ import random
 import GlobalVariables as vars
 from math import cos, sin, pi, asin
 import numpy as np
+from filterpy.kalman import ExtendedKalmanFilter as EKF
 
 class Target(object):
     '''
@@ -29,7 +30,11 @@ class Target(object):
         # need to have uncertainty and estimated position and direction
         self.uncertainty = 0
         self.ePosition = position
-        self.eDirection = direction 
+        
+        # Kalman filter for target
+        # four states. position, velocity, Cartesian coordinates
+        # two measurements, position
+        self.ekf = EKF(dim_x = 4, dim_z = 2)
         
     def step(self, uav):
         '''
@@ -54,17 +59,21 @@ class Target(object):
         # update position
         self.position = newPosition
         
-    def updateEstimates(self, visualized):
+    def updateEstimates(self, measuredPosition):
         '''
         update uncertainties of position and direction
         
         INPUT:
-            visualized:    boolean for if the target is visualized by UAV
+            visualized:    Cartesian coordinates for the measured position of the target
         '''
         
         #TODO: do stuff here that accounts for detection, EKF...
+        self.ekf.predict_update(z = measuredPosition, )
+        
+        
         self.uncertainty = 10
         self.ePosition = self.position
-        self.eDirection = self.direction 
+        
+        
         
         

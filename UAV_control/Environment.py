@@ -23,6 +23,7 @@ class Environement(object):
         Constructor
         
         Will create the world based on the globalVariables
+        estTargets is the estimated position of targets, an object for each target
         '''
         
         # create UAV and targets
@@ -30,7 +31,6 @@ class Environement(object):
         self.targets = []
         self.populateUAV()
         self.populateTargets()
-        
         
         
     def populateUAV(self):
@@ -73,6 +73,7 @@ class Environement(object):
             
             # create targets
             self.targets.append(Target(position=position, direction=direction))
+            
           
         
     def reset(self):
