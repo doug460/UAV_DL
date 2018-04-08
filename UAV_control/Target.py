@@ -34,7 +34,30 @@ class Target(object):
         # Kalman filter for target
         # four states. position, velocity, Cartesian coordinates
         # two measurements, position
-        self.ekf = EKF(dim_x = 4, dim_z = 2)
+        dim_x = 4
+        self.ekf = EKF(dim_x = dim_x, dim_z = dim_z)
+        
+        # transition model
+        self.ekf.F = np.array([[1, 0, vars.dt, 0],
+                              [0, 1, 0, vars.dt],
+                              [ 0, 0, 1, 0], 
+                              [0, 0, 0, 1]])
+        
+        # noise range
+        range_std = 1;
+        self.ekf.R = np.eye(dim_x) * range_std * range_std
+        
+        # covariance of process noise
+        processNoise = 0.1
+        self.ekf.Q = np.eye(dim_x)*processNoise
+        
+        # uncertainty covariance
+        self.ekf.P = np.eye(dim_x)
+        
+        
+        
+        
+        
         
     def step(self, uav):
         '''
@@ -64,15 +87,29 @@ class Target(object):
         update uncertainties of position and direction
         
         INPUT:
-            visualized:    Cartesian coordinates for the measured position of the target
+            visualized:    Numpy array, Cartesian coordinates for the measured position of the target
         '''
         
         #TODO: do stuff here that accounts for detection, EKF...
-        self.ekf.predict_update(z = measuredPosition, )
+        self.ekf.predict_update(z = measuredPosition, HJacobian = Hjacobian, Hx = hx)
         
         
         self.uncertainty = 10
         self.ePosition = self.position
+        
+    # Stuff for EKF
+    # Jacobian of measurement
+    def HJacobian(x):
+        array = np.zeros((4,4))
+        array[0,0] = 1
+        array[1,1] = 1
+        return array
+    
+    # measurement
+    def hx(x):
+        return np.array([x[0], x[1]])
+    
+        
         
         
         

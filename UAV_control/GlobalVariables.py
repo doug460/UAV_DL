@@ -8,6 +8,7 @@ from math import sin, pi
 
 # speed of simulation (FPS)
 fps = 10
+dt = 1/fps
 
 # limiting search radius (m)
 search_radius = 300
@@ -38,6 +39,7 @@ A_FORWARD = 0
 A_LEFT = 1
 A_RIGHT = 2
 ACTIONS = [A_FORWARD, A_LEFT, A_RIGHT]
+
 
 
 
