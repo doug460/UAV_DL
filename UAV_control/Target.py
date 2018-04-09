@@ -28,43 +28,40 @@ class Target(object):
         self.direction = direction 
         
         # need to have uncertainty and estimated position and direction
-        self.uncertainty = 0
-        self.ePosition = position
+        self.uncertainty = None
+        self.ePosition = None
         
         # Kalman filter for target
         # four states. position, velocity, Cartesian coordinates
         # two measurements, position
-        dim_x = 4
-        self.ekf = EKF(dim_x = dim_x, dim_z = dim_z)
+        self.dim_x = 2
+        self.dim_z = 2
+        self.ekf = EKF(dim_x = self.dim_x, dim_z = self.dim_z)
         
         # transition model
-        self.ekf.F = np.array([[1, 0, vars.dt, 0],
-                              [0, 1, 0, vars.dt],
-                              [ 0, 0, 1, 0], 
-                              [0, 0, 0, 1]])
+        self.ekf.F = np.array([[1,0],[0,1]])
         
-        # noise range
+        # position std
         range_std = 1;
-        self.ekf.R = np.eye(dim_x) * range_std * range_std
+        self.ekf.R = np.eye(self.dim_x) * range_std * range_std
         
         # covariance of process noise
         processNoise = 0.1
-        self.ekf.Q = np.eye(dim_x)*processNoise
+        self.ekf.Q = np.eye(self.dim_x)*processNoise
         
         # uncertainty covariance
-        self.ekf.P = np.eye(dim_x)
+        self.ekf.P = np.eye(self.dim_x) * 2 * range_std ** 2
         
         
         
         
         
         
-    def step(self, uav):
+    def step(self):
         '''
-        just move uav based speed and direction
-        there is a probability of random direction every second
-        
-        update uncertainty based on if it is visualized by UAV
+        move target
+        generate random direction periodically
+        keep target within bounds
         '''
         
         # generate random direction if need be
@@ -76,38 +73,52 @@ class Target(object):
         
         # check bounds, if out of bounds move target towards center
         if(np.linalg.norm(newPosition) > vars.search_radius):
+            # get angular position
             self.direction = asin(self.position[1]/np.linalg.norm(self.position))
-            newPosition = self.position + vars.targetSpeed * np.array([cos(self.direction), sin(self.direction)]) / vars/fps
+            if(self.position[0] < 0):
+                self.direction = pi - self.direction
+            # go towards center
+            self.direction += pi
+            newPosition = self.position + vars.targetSpeed * np.array([cos(self.direction), sin(self.direction)]) / vars.fps
         
         # update position
         self.position = newPosition
         
-    def updateEstimates(self, measuredPosition):
+    def measure(self, measuredPosition):
         '''
         update uncertainties of position and direction
         
         INPUT:
             visualized:    Numpy array, Cartesian coordinates for the measured position of the target
         '''
+        # get column vector
+        if measuredPosition is not None:
+            measuredPosition.shape = (2,1)
+        self.ekf.predict_update(z = measuredPosition, HJacobian = self.HJacobian, Hx = self.hx)
         
-        #TODO: do stuff here that accounts for detection, EKF...
-        self.ekf.predict_update(z = measuredPosition, HJacobian = Hjacobian, Hx = hx)
+        
+        self.uncertainty = self.ekf.P
+        self.ePosition = self.ekf.x
         
         
-        self.uncertainty = 10
-        self.ePosition = self.position
+    def predict(self):
+        # if no meausure value, just predict...
+        self.ekf.predict()
+        self.uncertainty = self.ekf.P
+        self.ePosition = self.ekf.x
         
     # Stuff for EKF
     # Jacobian of measurement
-    def HJacobian(x):
-        array = np.zeros((4,4))
+    def HJacobian(self, x):
+        array = np.zeros((self.dim_x, self.dim_x))
         array[0,0] = 1
         array[1,1] = 1
         return array
-    
+        
     # measurement
-    def hx(x):
+    def hx(self, x):
         return np.array([x[0], x[1]])
+
     
         
         

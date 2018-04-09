@@ -41,12 +41,12 @@ class UAV(object):
             self.position += vars.uavForward_distance * np.array([cos(self.direction), sin(self.direction)])
         elif(action == vars.A_LEFT):
             # update direction
-            self.direction -= vars.uavTurn_angle
-            self.position += vars.uavTurn_distance * np.array([cos(self.direction), sin(self.direction)])
+            self.direction += vars.uavTurn_angle            
+            self.position = self.position + vars.uavTurn_distance * np.array([cos(self.direction), sin(self.direction)])
         elif(action == vars.A_RIGHT):
             # update direction
-            self.direction += vars.uavTurn_angle
-            self.position += vars.uavTurn_distance * np.array([cos(self.direction), sin(self.direction)])
+            self.direction -= vars.uavTurn_angle
+            self.position = self.position + vars.uavTurn_distance * np.array([cos(self.direction), sin(self.direction)])
         else:
             print('Tried Action %d\n' % (action))
             raise ValueError('UAV action not available!!')
