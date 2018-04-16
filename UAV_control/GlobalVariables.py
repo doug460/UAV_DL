@@ -7,7 +7,7 @@ Created on Feb 19, 2018
 from math import sin, pi
 
 # speed of simulation (FPS)
-fps = 10
+fps = 5
 dt = 1/fps
 
 # limiting search radius (m)

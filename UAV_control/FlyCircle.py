@@ -40,6 +40,7 @@ if __name__ == '__main__':
     for iteration in range(seconds * vars.fps):
         # target is detected
         if(np.linalg.norm(uav.position - target.position) < vars.uav_fov/2):
+            # TODO: vector noise
             measuredPos = target.position + random.random()
             target.measure(measuredPos)
         else:

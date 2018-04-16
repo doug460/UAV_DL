@@ -42,11 +42,11 @@ class Target(object):
         self.ekf.F = np.array([[1,0],[0,1]])
         
         # position std
-        range_std = 1;
+        range_std = 2;
         self.ekf.R = np.eye(self.dim_x) * range_std * range_std
         
         # covariance of process noise
-        processNoise = 0.1
+        processNoise = 2
         self.ekf.Q = np.eye(self.dim_x)*processNoise
         
         # uncertainty covariance
