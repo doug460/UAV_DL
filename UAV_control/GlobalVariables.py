@@ -7,7 +7,7 @@ Created on Feb 19, 2018
 from math import sin, pi
 
 # speed of simulation (FPS)
-fps = 5
+fps = 30
 dt = 1/fps
 
 # limiting search radius (m)
@@ -39,6 +39,16 @@ A_FORWARD = 0
 A_LEFT = 1
 A_RIGHT = 2
 ACTIONS = [A_FORWARD, A_LEFT, A_RIGHT]
+
+# keep track of time in simulation
+time = 0
+
+# noise in measurement
+noise = 6
+
+def stepTime():
+    global time
+    time += dt
 
 
 
