@@ -44,7 +44,8 @@ ACTIONS = [A_FORWARD, A_LEFT, A_RIGHT]
 time = 0
 
 # noise in measurement
-noise = 6
+noiseStd = 3
+noiseMean = 0
 
 def stepTime():
     global time

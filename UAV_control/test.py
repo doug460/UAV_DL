@@ -11,13 +11,13 @@ from matplotlib.lines import Line2D
 
 def sayHi():
     print(string)
-
 if __name__ == '__main__':
     pass
 
-    one = np.array([1,1])
-    two = np.array([2,2])
-    three = np.concatenate((one,two))
-    print(np.random.rand(1,4))
+    array = np.zeros(500)
+    print(array.shape)
+    for indx in range(500):
+        array[indx] = random.random()
     
-    
+    plt.hist(array)
+    plt.show()

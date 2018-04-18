@@ -37,8 +37,7 @@ def stepSim():
     # target is detected
     if(np.linalg.norm(uav.position - target.position) < vars.uav_fov/2):
         # add some noise to the measurement
-        target.updateVelocity()
-        measured = np.append(target.position, target.velocity) + (np.random.rand(1,4)-0.5)*2*vars.noise
+        measured = np.array([target.position]).T + np.random.normal(vars.noiseMean, vars.noiseStd, (2,1))
         target.measure(measured)
     else:
         target.predict()
@@ -60,11 +59,11 @@ def stepSim():
     # plot predicted
     ax.plot(target.ePosition[0],target.ePosition[1],'.')
     # plot standard deviation
-    sigX = target.uncertainty[0,0]
-    sigY = target.uncertainty[1,1]
-    ell = Ellipse(target.ePosition, width = sigX, height = sigY, angle = 0, edgecolor='b', lw=2, facecolor='none')
+    sigX = math.sqrt(target.uncertainty[0,0])
+    sigY = math.sqrt(target.uncertainty[1,1])
+    ell = Ellipse(target.ePosition, width = 3*sigX, height = 3*sigY, angle = 0, edgecolor='b', lw=2, facecolor='none')
     ax.add_artist(ell)
-    plt.title('Variance of target position')
+    plt.title('3$\sigma$ of target position')
     
 
         
@@ -77,7 +76,7 @@ if __name__ == '__main__':
     
     # control visualizations
     anime = True
-    animeFps = 10
+    animeFps = 15
     saveAnime = True
     viewLive = False
     

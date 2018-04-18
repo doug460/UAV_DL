@@ -27,11 +27,6 @@ class Target(object):
         self.position = position
         self.direction = direction 
         
-        # keep track of target velocity
-        self.prevPos = position
-        self.prevPos_time = None
-        self.velocity = None
-        
         # need to have uncertainty and estimated position and direction
         self.uncertainty = None
         self.ePosition = None
@@ -40,7 +35,7 @@ class Target(object):
         # four states. position, velocity, Cartesian coordinates
         # two measurements, position
         self.dim_x = 4
-        self.dim_z = 4
+        self.dim_z = 2
         self.ekf = EKF(dim_x = self.dim_x, dim_z = self.dim_z)
         
         # transition model
@@ -54,11 +49,11 @@ class Target(object):
         self.ekf.F = F
         
         # position std
-        range_std = 7;
-        self.ekf.R = np.eye(self.dim_x) * range_std * range_std
+        range_std = vars.noiseStd;
+        self.ekf.R = np.eye(self.dim_z) * range_std * range_std
         
         # covariance of process noise
-        processNoise = 0.01
+        processNoise = 0.2
         self.ekf.Q = np.eye(self.dim_x)*processNoise
         
         # uncertainty covariance
@@ -73,6 +68,7 @@ class Target(object):
         '''
         
         # generate random direction if need be
+        # uniform distribution
         if(random.random() < vars.targetRand_dir):
             self.direction = random.random() * 2 * pi
             
@@ -102,7 +98,7 @@ class Target(object):
         
         # get column vector
         if measuredPosition is not None:
-            measuredPosition.shape = (4,1)
+            measuredPosition.shape = (2,1)
         self.ekf.predict_update(z = measuredPosition, HJacobian = self.HJacobian, Hx = self.hx)
         
         
@@ -119,29 +115,16 @@ class Target(object):
     # Stuff for EKF
     # Jacobian of measurement
     def HJacobian(self, x):
-        array = np.zeros((self.dim_x, self.dim_x))
+        array = np.zeros((self.dim_z, self.dim_x))
         array[0,0] = 1
         array[0,2] = vars.dt
         array[1,1] = 1
         array[1,3] = vars.dt
-        array[2,2] = 1
-        array[3,3] = 1
         return array
         
     # measurement
     def hx(self, x):
-        return np.array([x[0]+x[2] * vars.dt, x[1] +x[3]*vars.dt, x[2],x[3]])
-    
-    def updateVelocity(self):
-        # update the velocity
-        if self.prevPos_time == None:
-            self.prevPos_time = vars.time
-            self.velocity = np.zeros((1,2))
-            self.prevPos = self.position
-        else:
-            self.velocity = (self.position - self.prevPos)/(vars.time - self.prevPos_time)
-            self.prevPos = self.position
-            self.prevPos_time = vars.time 
+        return np.array([[x[0,0]+x[2,0] * vars.dt], [x[1,0] + x[3,0] * vars.dt]])
 
 
 
