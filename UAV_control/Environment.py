@@ -40,16 +40,16 @@ class Environement(object):
         # randomly place UAV in search radius
         # random distance and angle
         radius = random.random() * vars.search_radius
-        angle = random.random() * math.pi * 2
-        position = np.array([math.cos(angle) * radius, math.sin(angle) * radius])
+        direction = random.random() * math.pi * 2
+        position = np.array([math.cos(direction) * radius, math.sin(direction) * radius])
         
         # placing UAV at center to start
         # TODO: maybe change later
         position = np.array([0,0], dtype = np.float64)
-        
-        
-        # get random direction
-        direction = 2 * math.pi * random.random()
+#         
+#         
+#         # get random direction
+#         direction = 2 * math.pi * random.random()
         
         self.uav = UAV(position=position, direction=direction)
             
@@ -92,7 +92,12 @@ class Environement(object):
         OUTPUT:
             shoudlContinue: boolean, if UAV is out of bounds or not
         '''
-        return np.linalg.norm(self.uav.position) < vars.search_radius
+        targetsCont = True
+        for target in self.targets:
+            if(np.linalg.norm(target.position) > vars.search_radius):
+                targetsCont = False
+        test = (np.linalg.norm(self.uav.position) < vars.search_radius) and targetsCont 
+        return test
         
         
     def step(self, action):
@@ -112,9 +117,20 @@ class Environement(object):
         # save the total uncertainty
         cost = 0
         for target in self.targets:
-            target.step(self.uav)
+            # update predicitons
+            if(np.linalg.norm(self.uav.position - target.position) < vars.uav_fov/2):
+                # add some noise to the measurement
+                measured = np.array([target.position]).T + np.random.normal(vars.noiseMean, vars.noiseStd, (2,1))
+                target.measure(measured)
+            else:
+                target.predict()
+            
+            # move target
+            target.step()
+            
             # get total cost
-            cost += target.uncertainty
+            uncertainty = (target.uncertainty[0,0]**2 + target.uncertainty[1,1]**2)**0.5
+            cost += uncertainty
             
         # move UAV
         self.uav.step(action)

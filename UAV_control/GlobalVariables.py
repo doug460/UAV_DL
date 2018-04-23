@@ -11,15 +11,15 @@ fps = 30
 dt = 1/fps
 
 # limiting search radius (m)
-search_radius = 50
+search_radius = 150
 
 # define UAV parameters
 # UAV speed (m/s)
 uavSpeed = 20
 # minimum turning radius of UAV (m)
-uavTurn_radius = 25
-# field of view radius (m)
-uav_fov = 40
+uavTurn_radius = 15
+# field of view diameter (m)
+uav_fov = 50
 # number of UAVs
 # the environment only creates a single UAV at a time
 uav_num = 1

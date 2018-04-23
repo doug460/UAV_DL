@@ -11,6 +11,8 @@ import matplotlib.pyplot as plt
 from Environment import Environement
 import GlobalVariables as vars 
 import time
+import math
+from matplotlib.patches import Ellipse
 
 if __name__ == '__main__':
     pass
@@ -24,22 +26,17 @@ if __name__ == '__main__':
     ax = fig.add_subplot(111)
     x = 0
     y = 0
-    uavLine, = ax.plot(x,y,'x')
-    targetsLines = []
-    for index in range(vars.target_num):
-        line, = ax.plot(x,y,'*')
-        targetsLines.append(line)
-
     
     start_time = time.time()
     
-    plt.axis([-vars.search_radius, vars.search_radius, -vars.search_radius, vars.search_radius])
+    
     
     
     
     for indx in range(300):
 #         plt.clf()
         # move forward
+        plt.axis([-vars.search_radius, vars.search_radius, -vars.search_radius, vars.search_radius])
         
         if(indx < 100):
             uav, targets, cost = env.step(vars.A_FORWARD)
@@ -50,22 +47,58 @@ if __name__ == '__main__':
         else:
             uav, targets, cost = env.step(vars.A_RIGHT)
             
+        plt.title('Cost %.2f\n' % (cost))
+            
         # plot uav
-#         plt.plot(uav.position[0], uav.position[1], '*')
-        uavLine.set_xdata(uav.position[0])
-        uavLine.set_ydata(uav.position[1])
+        plt.plot(uav.position[0], uav.position[1], '*')
         
         # plot target stuff
         for index, target in enumerate(targets):
-            line = targetsLines[index]
-            line.set_xdata(target.position[0])
-            line.set_ydata(target.position[1])
-#             plt.plot(target.position[0], target.position[1], 'x')
+            plt.plot(target.position[0], target.position[1], 'x')
+            
+            # plot predicted
+            ax.plot(target.ePosition[0],target.ePosition[1],'.')
+            # plot standard deviation
+            sigX = math.sqrt(target.uncertainty[0,0])
+            sigY = math.sqrt(target.uncertainty[1,1])
+            ell = Ellipse(target.ePosition, width = 3*sigX, height = 3*sigY, angle = 0, edgecolor='b', lw=2, facecolor='none')
+            ax.add_artist(ell)
+
+        # plot circle around uav
+        radius = vars.uav_fov/2
+        t = np.arange(0, 2 * math.pi, 0.01)
+        x = np.cos(t) * radius + uav.position[0]
+        y = np.sin(t) * radius + uav.position[1]
+        line_fov, = ax.plot(x,y,'g:', label = 'Field of View')
+        
         
         fig.canvas.draw()
         plt.pause(0.001)
+        plt.cla()
         
     print("--- %s seconds ---" % (time.time() - start_time))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         
     
 

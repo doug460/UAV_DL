@@ -74,6 +74,14 @@ if __name__ == '__main__':
     pass
     print('Setting up stuff')
     
+    # limiting search radius (m)
+    vars.search_radius = 50
+    # minimum turning radius of UAV (m)
+    vars.uavTurn_radius = 25
+    # field of view diameter (m)
+    vars.uav_fov = 40
+    vars.target_num = 1
+    
     # control visualizations
     anime = True
     animeFps = 15

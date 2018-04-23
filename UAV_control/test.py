@@ -14,10 +14,4 @@ def sayHi():
 if __name__ == '__main__':
     pass
 
-    array = np.zeros(500)
-    print(array.shape)
-    for indx in range(500):
-        array[indx] = random.random()
-    
-    plt.hist(array)
-    plt.show()
+    print(True and True)
