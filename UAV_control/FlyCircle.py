@@ -85,8 +85,8 @@ if __name__ == '__main__':
     # control visualizations
     anime = True
     animeFps = 15
-    saveAnime = True
-    viewLive = False
+    saveAnime = False
+    viewLive = True
     
     # want to run simulation for 60 seconds
     seconds = 20   
@@ -97,7 +97,7 @@ if __name__ == '__main__':
     uav = UAV(uavPos, uavDir)
     
     targetPos = np.array([vars.uavTurn_radius,0])
-    targetDir = 90*2*math.pi/360
+    targetDir = 180*2*math.pi/360
     target = Target(targetPos, targetDir)
      
     
