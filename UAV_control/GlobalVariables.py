@@ -6,6 +6,9 @@ Created on Feb 19, 2018
 
 from math import sin, pi
 
+# path for saving stuff
+dir = '/media/dabrown/BC5C17EB5C179F68/Users/imdou/My Documents/NMSU Research Dr. Sun/Programming/Python/Data/'
+
 # speed of simulation (FPS)
 fps = 30
 dt = 1/fps
@@ -19,10 +22,12 @@ uavSpeed = 20
 # minimum turning radius of UAV (m)
 uavTurn_radius = 15
 # field of view diameter (m)
-uav_fov = 50
+uav_dfov = 50
 # number of UAVs
 # the environment only creates a single UAV at a time
+# number of states associated with UAV for neural network
 uav_num = 1
+uav_states = 2
 
 # define target parameters
 # speed (m/s)
@@ -31,7 +36,9 @@ targetSpeed = 6
 targetRand_dir = 0.1
 targetRand_dir = targetRand_dir / fps
 # number of targets
+# number of states associated with target in neural network
 target_num = 1
+target_states = 3
 
 
 # define types of actions
@@ -64,3 +71,17 @@ def stepTime():
 uavTurn_angle = uavSpeed / (fps * uavTurn_radius)
 uavTurn_distance =  uavTurn_radius * sin(uavTurn_angle) / sin((pi - uavTurn_angle)/2)
 uavForward_distance = uavSpeed / fps
+
+
+
+
+
+
+
+
+
+
+
+
+
+

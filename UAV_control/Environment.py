@@ -32,6 +32,9 @@ class Environement(object):
         self.populateUAV()
         self.populateTargets()
         
+        # limit on how large uncertainty for a single target can be
+        self.uncertLimit = vars.uav_dfov
+        
         
     def populateUAV(self):
         '''
@@ -41,15 +44,7 @@ class Environement(object):
         # random distance and angle
         radius = random.random() * vars.search_radius
         direction = random.random() * math.pi * 2
-        position = np.array([math.cos(direction) * radius, math.sin(direction) * radius])
-        
-        # placing UAV at center to start
-        # TODO: maybe change later
-        position = np.array([0,0], dtype = np.float64)
-#         
-#         
-#         # get random direction
-#         direction = 2 * math.pi * random.random()
+        position = np.array([(2*random.random() - 1) * radius, (2*random.random() - 1) * radius])
         
         self.uav = UAV(position=position, direction=direction)
             
@@ -59,22 +54,13 @@ class Environement(object):
         '''
         # create targets
         for indx in range(vars.target_num):
-            # random distance and angle
-            radius = random.random() * vars.search_radius
-            angle = random.random() * math.pi * 2
-            position = np.array([math.cos(angle) * radius, math.sin(angle) * radius])
-            
-            # putting Target at center
-            # TODO: maybe change laters
-            position = np.array([0,0], dtype = np.float64)
-            
-            # random direction
-            direction = 2 * math.pi * random.random()
+            # randomly place target within dfov of UAV
+            radius = random.random() * vars.uav_dfov/2
+            direction = random.random() * math.pi * 2
+            position = np.array([(2*random.random() - 1) * radius, (2*random.random() - 1) * radius]) + self.uav.position
             
             # create targets
             self.targets.append(Target(position=position, direction=direction))
-            
-          
         
     def reset(self):
         '''
@@ -106,37 +92,53 @@ class Environement(object):
         
         INPUT:
             action: this is the action for the UAV
+                defined in global variables
             
         OUPUT:
-            UAV:     UAV object
-            targets:    target object
-            Cost: total uncertainty of target positions
+            state: (row vector)
+                UAV Position (x,y)
+                Target e position (x,y)
+                Target uncertainty (x)
+            Reward: reward for run
+                +1: detecting target
+                +0.1: for exploring
+                -1: if uncertainty > uncertaintyLimit for a single target
+            terminal:
+                bool to continue
         '''
         
         # move all targets
-        # save the total uncertainty
-        cost = 0
         for target in self.targets:
             # update predicitons
-            if(np.linalg.norm(self.uav.position - target.position) < vars.uav_fov/2):
+            if(np.linalg.norm(self.uav.position - target.position) < vars.uav_dfov/2):
                 # add some noise to the measurement
                 measured = np.array([target.position]).T + np.random.normal(vars.noiseMean, vars.noiseStd, (2,1))
                 target.measure(measured)
+                reward = 1
             else:
                 target.predict()
+                reward = 0.1
             
             # move target
             target.step()
             
-            # get total cost
-            uncertainty = (target.uncertainty[0,0]**2 + target.uncertainty[1,1]**2)**0.5
-            cost += uncertainty
+            # three sigma of uncertainty
+            uncertainty = 3*(target.uncertainty[0,0]**2 + target.uncertainty[1,1]**2)**0.5
+            if(uncertainty > self.uncertLimit):
+                cost = uncertainty
+                reward = -1
             
         # move UAV
         self.uav.step(action)
         
-        # return that stuff!!
-        return self.uav, self.targets, cost
+        # get state info
+        state = self.uav.position
+        for target in self.targets:
+            uncertainty = 3 * math.sqrt(target.uncertainty[0,0]**2 + target.uncertainty[0,0]**2)
+            state = np.append(state, target.position)
+            state = np.append(state, uncertainty)
+            
+        return state, reward, self.checkContinue()
         
 
 

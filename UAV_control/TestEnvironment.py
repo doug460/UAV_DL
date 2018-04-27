@@ -14,6 +14,7 @@ import time
 import math
 from matplotlib.patches import Ellipse
 
+
 if __name__ == '__main__':
     pass
 
@@ -39,15 +40,18 @@ if __name__ == '__main__':
         plt.axis([-vars.search_radius, vars.search_radius, -vars.search_radius, vars.search_radius])
         
         if(indx < 100):
-            uav, targets, cost = env.step(vars.A_FORWARD)
+            state, reward, terminal = env.step(vars.A_FORWARD)
             
         elif(indx < 200):
-            uav, targets, cost = env.step(vars.A_LEFT)
+            state, reward, terminal = env.step(vars.A_LEFT)
             
         else:
-            uav, targets, cost = env.step(vars.A_RIGHT)
+            state, reward, terminal = env.step(vars.A_RIGHT)
             
-        plt.title('Cost %.2f\n' % (cost))
+        plt.title('Reward %.2f\n' % (reward))
+        plt.xlabel('UAV: (%.1f %.1f) Tar: (%.1f %.1f)  %.2f' % (state[0], state[1], state[2], state[3], state[4]))
+        uav = env.uav
+        targets = env.targets
             
         # plot uav
         plt.plot(uav.position[0], uav.position[1], '*')
@@ -58,14 +62,14 @@ if __name__ == '__main__':
             
             # plot predicted
             ax.plot(target.ePosition[0],target.ePosition[1],'.')
-            # plot standard deviation
-            sigX = math.sqrt(target.uncertainty[0,0])
-            sigY = math.sqrt(target.uncertainty[1,1])
+            # plot standard deviation (3 sigma)
+            sigX = math.sqrt(target.uncertainty[0,0])*3
+            sigY = math.sqrt(target.uncertainty[1,1])*3
             ell = Ellipse(target.ePosition, width = 3*sigX, height = 3*sigY, angle = 0, edgecolor='b', lw=2, facecolor='none')
             ax.add_artist(ell)
 
         # plot circle around uav
-        radius = vars.uav_fov/2
+        radius = vars.uav_dfov/2
         t = np.arange(0, 2 * math.pi, 0.01)
         x = np.cos(t) * radius + uav.position[0]
         y = np.sin(t) * radius + uav.position[1]

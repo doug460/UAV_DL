@@ -14,6 +14,7 @@ def sayHi():
 if __name__ == '__main__':
     pass
 
-    one = np.array([[1,1],[2,2]])
-    two = np.array([[3,3],[4,4]])
-    print(one.T)
+    one = np.array([1,2])
+    two = np.array([3,4])
+    print(np.append(one, two))
+    print(one)
