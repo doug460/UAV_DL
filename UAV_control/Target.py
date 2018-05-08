@@ -63,7 +63,9 @@ class Target(object):
 #         self.ekf.P = np.eye(self.dim_x) * 2 * range_std ** 2
         self.P = np.eye(self.dim_x) * 2 * range_std ** 2
         
-        self.x = np.ones((self.dim_x,1))
+        # give initial position as start of ekf
+        self.x = np.array([[position[0]],[position[1]],[0.0],[0.0]])
+#         self.x = np.ones((self.dim_x,1))
         
         
     def step(self):

@@ -44,7 +44,8 @@ def stepSim():
     
     # move target and UAV
     target.step()
-    uav.step(vars.A_LEFT)
+    action = np.array([0,1,0])
+    uav.step(action)
     
     # plot positions
     ax.plot(target.position[0],target.position[1],'x')

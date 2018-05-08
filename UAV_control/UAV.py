@@ -36,14 +36,14 @@ class UAV(object):
         based on specific action
         '''
         
-        if(action == vars.A_FORWARD):
+        if(action[0] == 1):
             # direction remains unchanged
             self.position += vars.uavForward_distance * np.array([cos(self.direction), sin(self.direction)])
-        elif(action == vars.A_LEFT):
+        elif(action[1] == 1):
             # update direction
             self.direction += vars.uavTurn_angle            
             self.position = self.position + vars.uavTurn_distance * np.array([cos(self.direction), sin(self.direction)])
-        elif(action == vars.A_RIGHT):
+        elif(action[2] == 1):
             # update direction
             self.direction -= vars.uavTurn_angle
             self.position = self.position + vars.uavTurn_distance * np.array([cos(self.direction), sin(self.direction)])

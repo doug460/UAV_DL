@@ -7,14 +7,14 @@ Created on Feb 19, 2018
 from math import sin, pi
 
 # path for saving stuff
-dir = '/media/dabrown/BC5C17EB5C179F68/Users/imdou/My Documents/NMSU Research Dr. Sun/Programming/Python/Data/'
+dir = '/home/dabrown/Documents/PythonData/'
 
 # speed of simulation (FPS)
 fps = 30
 dt = 1/fps
 
 # limiting search radius (m)
-search_radius = 150
+search_radius = 350
 
 # define UAV parameters
 # UAV speed (m/s)
@@ -22,7 +22,7 @@ uavSpeed = 20
 # minimum turning radius of UAV (m)
 uavTurn_radius = 15
 # field of view diameter (m)
-uav_dfov = 50
+uav_dfov = 75
 # number of UAVs
 # the environment only creates a single UAV at a time
 # number of states associated with UAV for neural network
@@ -42,10 +42,10 @@ target_states = 3
 
 
 # define types of actions
+A_num = 3
 A_FORWARD = 0
 A_LEFT = 1
 A_RIGHT = 2
-ACTIONS = [A_FORWARD, A_LEFT, A_RIGHT]
 
 # keep track of time in simulation
 time = 0

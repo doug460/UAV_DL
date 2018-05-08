@@ -9,12 +9,12 @@ import random
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 
-def sayHi():
-    print(string)
+
 if __name__ == '__main__':
     pass
 
-    one = np.array([1,2])
-    two = np.array([3,4])
-    print(np.append(one, two))
-    print(one)
+    for indx in range(10):
+        if indx == 5:
+            break;
+        
+    print(indx)

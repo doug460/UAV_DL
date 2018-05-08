@@ -33,18 +33,20 @@ class Environement(object):
         self.populateTargets()
         
         # limit on how large uncertainty for a single target can be
-        self.uncertLimit = vars.uav_dfov
+        self.uncertLimit = vars.uav_dfov/2
+        self.uncertLimit_termial = vars.uav_dfov
         
         
     def populateUAV(self):
         '''
         create a single UAV
         '''
-        # randomly place UAV in search radius
+        # randomly place UAV in search radius reduced by 50%
         # random distance and angle
-        radius = random.random() * vars.search_radius
+        radius = random.random() * vars.search_radius * 0.5
         direction = random.random() * math.pi * 2
-        position = np.array([(2*random.random() - 1) * radius, (2*random.random() - 1) * radius])
+#         position = np.array([(2*random.random() - 1) * radius, (2*random.random() - 1) * radius])
+        position = np.array([0.0,0.0])
         
         self.uav = UAV(position=position, direction=direction)
             
@@ -54,13 +56,35 @@ class Environement(object):
         '''
         # create targets
         for indx in range(vars.target_num):
-            # randomly place target within dfov of UAV
-            radius = random.random() * vars.uav_dfov/2
+            # randomly place target outside of UAV FOV, so this radius is in addition to d_fov
+            radius = random.random() * vars.uav_dfov
             direction = random.random() * math.pi * 2
-            position = np.array([(2*random.random() - 1) * radius, (2*random.random() - 1) * radius]) + self.uav.position
+            position = np.array([random.random() * radius + vars.uav_dfov/2, random.random() * radius + vars.uav_dfov/2]) + self.uav.position
+            
+            # create target
+            target = Target(position=position, direction=direction)
+            
+            # add measurement of initial location
+#             measured = np.array([target.position]).T
+#             target.measure(measured)
+            
             
             # create targets
-            self.targets.append(Target(position=position, direction=direction))
+            self.targets.append(target)
+            
+    def getUncert(self,target):
+        # INPUT:
+        #     target
+        # OUTPUT:
+        #     uncertainty
+        
+        # get Pythagorean uncertainty of position for variance
+        # square root of variance and then go to 97 % confidence (3 * sigma)
+        uncertainty = 3 * math.sqrt(math.sqrt(target.uncertainty[0,0]**2 + target.uncertainty[0,0]**2))
+        
+        return uncertainty
+            
+            
         
     def reset(self):
         '''
@@ -71,18 +95,28 @@ class Environement(object):
         self.populateUAV()
         self.populateTargets()
         
-    def checkContinue(self):
+    def checkTerminal(self):
         '''
         Check if should continue
         
         OUTPUT:
             shoudlContinue: boolean, if UAV is out of bounds or not
         '''
-        targetsCont = True
+        terminal = False
         for target in self.targets:
+            # if targets are outside
             if(np.linalg.norm(target.position) > vars.search_radius):
-                targetsCont = False
-        test = (np.linalg.norm(self.uav.position) < vars.search_radius) and targetsCont 
+                terminal = True
+            
+            # if uncertainty is too large
+            # pathagorean and square root of variance
+            uncertainty = self.getUncert(target)
+            if(uncertainty > self.uncertLimit_termial):
+                terminal = True
+                
+        # if uav is within search radius
+        test = (np.linalg.norm(self.uav.position) > vars.search_radius) or terminal 
+        
         return test
         
         
@@ -123,7 +157,8 @@ class Environement(object):
             target.step()
             
             # three sigma of uncertainty
-            uncertainty = 3*(target.uncertainty[0,0]**2 + target.uncertainty[1,1]**2)**0.5
+            # so Pathagorean and square root of variance 
+            uncertainty = self.getUncert(target)
             if(uncertainty > self.uncertLimit):
                 cost = uncertainty
                 reward = -1
@@ -132,13 +167,15 @@ class Environement(object):
         self.uav.step(action)
         
         # get state info
+        # UAV position
+        # target position, uncertainty
         state = self.uav.position
         for target in self.targets:
-            uncertainty = 3 * math.sqrt(target.uncertainty[0,0]**2 + target.uncertainty[0,0]**2)
+            uncertainty = self.getUncert(target)
             state = np.append(state, target.position)
             state = np.append(state, uncertainty)
             
-        return state, reward, self.checkContinue()
+        return state, reward, self.checkTerminal()
         
 
 
