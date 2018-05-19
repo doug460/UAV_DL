@@ -31,21 +31,21 @@ if __name__ == '__main__':
     start_time = time.time()
     action = np.zeros(vars.A_num)
     
-    viewRate = vars.fps/5
+    viewRate = vars.fps
     
     
     
     
-    for indx in range(700):
+    for indx in range(150):
 #         plt.clf()
         # move forward
         plt.axis([-vars.search_radius, vars.search_radius, -vars.search_radius, vars.search_radius])
         
-        if(indx < 100):
+        if(indx < 30):
             action[0] = 1
             state, reward, terminal = env.step(action)
             
-        elif(indx < 200):
+        elif(indx < 60):
             action[0] = 0
             action[1] = 1
             state, reward, terminal = env.step(action)
@@ -59,7 +59,8 @@ if __name__ == '__main__':
         # if at view rate, view stuff
         if indx % viewRate == 0:
             plt.title('Reward %.2f Term = %s  t = %6.2f' % (reward, terminal, indx / vars.fps))
-            plt.xlabel('UAV: (%.1f %.1f) Tar: (%.1f %.1f) $3*\sigma$: %.2f' % (state[0], state[1], state[2], state[3], state[4]))
+#             plt.xlabel('UAV: (%.1f %.1f %.2f) Tar: (%.1f %.1f) + (%.2f) $3*\sigma$: %.2f' % (state[0], state[1], state[2], state[3], state[4], state[5], state[6]))
+            print(state)
             uav = env.uav
             targets = env.targets
                 
@@ -87,7 +88,7 @@ if __name__ == '__main__':
             
             
             fig.canvas.draw()
-            plt.pause(0.001)
+            plt.pause(0.1)
             plt.cla()
         
         if terminal:

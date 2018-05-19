@@ -6,7 +6,7 @@ Created on Feb 19, 2018
 
 import numpy as np
 import GlobalVariables as vars
-from math import cos, sin
+from math import cos, sin, pi
 
 
 class UAV(object):
@@ -28,6 +28,13 @@ class UAV(object):
         self.position = position
         self.direction = direction
         
+    def angleBound(self, angle):
+        while(angle > pi):
+            angle -= 2*pi
+        while(angle < -pi):
+            angle += 2*pi
+        
+        return angle
         
 
     def step(self, action):
@@ -41,11 +48,13 @@ class UAV(object):
             self.position += vars.uavForward_distance * np.array([cos(self.direction), sin(self.direction)])
         elif(action[1] == 1):
             # update direction
-            self.direction += vars.uavTurn_angle            
+            self.direction += vars.uavTurn_angle   
+            self.direction = self.angleBound(self.direction)
             self.position = self.position + vars.uavTurn_distance * np.array([cos(self.direction), sin(self.direction)])
         elif(action[2] == 1):
             # update direction
             self.direction -= vars.uavTurn_angle
+            self.direction = self.angleBound(self.direction)
             self.position = self.position + vars.uavTurn_distance * np.array([cos(self.direction), sin(self.direction)])
         else:
             print('Tried Action %d\n' % (action))

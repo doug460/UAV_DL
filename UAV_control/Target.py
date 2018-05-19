@@ -61,12 +61,20 @@ class Target(object):
         
         # uncertainty covariance
 #         self.ekf.P = np.eye(self.dim_x) * 2 * range_std ** 2
-        self.P = np.eye(self.dim_x) * 2 * range_std ** 2
+#         self.P = np.eye(self.dim_x) * 2 * range_std ** 2
+        self.P = np.eye(self.dim_x) * range_std
         
         # give initial position as start of ekf
         self.x = np.array([[position[0]],[position[1]],[0.0],[0.0]])
 #         self.x = np.ones((self.dim_x,1))
+    
+    def angleBound(self, angle):
+        while(angle > pi):
+            angle -= 2*pi
+        while(angle < -pi):
+            angle += 2*pi
         
+        return angle
         
     def step(self):
         '''
@@ -78,7 +86,7 @@ class Target(object):
         # generate random direction if need be
         # uniform distribution
         if(random.random() < vars.targetRand_dir):
-            self.direction = random.random() * 2 * pi
+            self.direction = random.random() * 2 * pi - pi
             
         # move target
         newPosition = self.position + vars.targetSpeed * np.array([cos(self.direction), sin(self.direction)]) / vars.fps
@@ -95,6 +103,9 @@ class Target(object):
         
         # update position
         self.position = newPosition
+        
+        # check angle bound
+        self.direction = self.angleBound(self.direction)
         
     def measure(self, measuredPosition):
         '''

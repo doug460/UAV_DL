@@ -12,18 +12,16 @@ from Environment import Environement
 GAME = 'oneUav' # the name of the game being played for log files
 ACTIONS = 3 # number of valid actions
             # actions are [forward, left, right]
-GAMMA = 0.99 # decay rate of past observations
-OBSERVE = 10000. # timesteps to observe before training
-EXPLORE = 20000. # frames over which to anneal epsilon
-FINAL_EPSILON = 0.0001 # final value of epsilon
-INITIAL_EPSILON = 0.001 # starting value of epsilon
+GAMMA = 0.90 # decay rate of past observations
+OBSERVE = 50000. # timesteps to observe before training
+EXPLORE = 100000. # frames over which to anneal epsilon
+FINAL_EPSILON = 0.1 # final value of epsilon
+INITIAL_EPSILON = 0.5 # starting value of epsilon
 REPLAY_MEMORY = 25000 # number of previous transitions to remember
 TOTAL_TRAIN = 1000000 # total number of training steps
 BATCH = 32 # size of minibatch
 FRAME_PER_ACTION = 1
-
-# folder for stuff
-dir = vars.dir + 'Q_Sims/'
+LEARNING_RATE = 1e-6
 
 def weight_variable(shape):
     initial = tf.truncated_normal(shape, stddev = 0.66)
@@ -35,16 +33,14 @@ def bias_variable(shape):
 
 def createNetwork():  
     numIn = vars.uav_num * vars.uav_states + vars.target_num * vars.target_states
-    h1Size = 100
-    h2Size = 100
-    h3Size = 100
+    h1Size = 50
+    h2Size = 50
     outSize = ACTIONS
     # input
     input = tf.placeholder('float', [None, numIn])
     h1 = newLayer(input, numIn, h1Size, True)
     h2 = newLayer(h1, h1Size, h2Size, True)
-    h3 = newLayer(h2, h2Size, h3Size, True)
-    out = newLayer(h3, h3Size, outSize, True)
+    out = newLayer(h2, h2Size, outSize, False)
     
     return input, out
 
@@ -64,7 +60,7 @@ def trainNetwork(input, output, sess):
     y = tf.placeholder("float", [None])
     readout_action = tf.reduce_sum(tf.multiply(output, a), reduction_indices=1)
     cost = tf.reduce_mean(tf.square(y - readout_action))
-    train_step = tf.train.AdamOptimizer(1e-6).minimize(cost)
+    train_step = tf.train.AdamOptimizer(LEARNING_RATE).minimize(cost)
 
     # open up a game state to communicate with emulator
     game_state = Environement()
@@ -72,24 +68,16 @@ def trainNetwork(input, output, sess):
     # store the previous observations in replay memory
     D = deque()
 
-    # printing
-    a_file = open(dir + "logs_" + GAME + "/readout.txt", 'w')
-    h_file = open(dir + "logs_" + GAME + "/hidden.txt", 'w')
-
     # get the first state by doing nothing
     do_nothing = np.zeros(ACTIONS)
     do_nothing[0] = 1
     s_t, r_0, terminal = game_state.step(do_nothing)
 
     # saving and loading networks
-    saver = tf.train.Saver()
-    sess.run(tf.initialize_all_variables())
-    checkpoint = tf.train.get_checkpoint_state("saved_networks")
-    if checkpoint and checkpoint.model_checkpoint_path:
-        saver.restore(sess, checkpoint.model_checkpoint_path)
-        print("Successfully loaded:", checkpoint.model_checkpoint_path)
-    else:
-        print("Could not find old network weights")
+    sess.run(tf.global_variables_initializer())
+
+    # keep track of goas reached
+    goals = 0
 
     # start training
     epsilon = INITIAL_EPSILON
@@ -158,8 +146,8 @@ def trainNetwork(input, output, sess):
             game_state.reset()
 
         # save progress every 10000 iterations
-        if t % 10000 == 0:
-            saver.save(sess, dir + 'saved_networks/' + GAME + '-dqn', global_step = t)
+#         if t % 10000 == 0:
+#             saver.save(sess, dir + 'saved_networks/' + GAME + '-dqn', global_step = t)
 
         # print my own info every 1000 iterations, basically get sample run to compare performance
         if t % 1000 == 0:
@@ -172,43 +160,32 @@ def trainNetwork(input, output, sess):
             uncert = 0
             # run for 10 seconds
             for indx in range(10 * vars.fps):
-                readout_t = output.eval(feed_dict={input : [s_t]})[0]
+                readout_t = output.eval(feed_dict={input : [state]})[0]
                 action = np.zeros([ACTIONS])   
                 action_index = np.argmax(readout_t)
                 action[action_index] = 1
                 state, reward, terminal = testGame.step(action)
                 
                 # save uncertainty of state
-                uncert += state[4]
+                uncert += state[2]
                 
                 # if terminal break out of for loop
                 if terminal:
                     break;
                 
-                # print out actino every second
-                if indx % vars.fps == 0:
-                    print('action: [%d %d %d]', (action[0], action[1], action[2]))
+            if reward > 0:
+                goals += 1
             
             # average uncertainty
-            if indx == 0:
-                stopHere = True
             uncert = uncert / indx
             
-            print('Iteration: %7d. Uncert %7.2f' % (t, uncert))
+            
                 
-                
-#         # print info
-#         state = ""
-#         if t <= OBSERVE:
-#             state = "observe"
-#         elif t > OBSERVE and t <= OBSERVE + EXPLORE:
-#             state = "explore"
-#         else:
-#             state = "train"
-# 
-#         print("TIMESTEP", t, "/ STATE", state, \
-#             "/ EPSILON", epsilon, "/ ACTION", action_index, "/ REWARD", r_t, \
-#             "/ Q_MAX %e" % np.argmax(readout_t))
+        if t % 10000 == 0:
+            print('Iteration: %7d. goals %5d of %5d' % (t, goals, 10))
+            goals = 0
+            
+            
 
 def playGame():
     sess = tf.InteractiveSession()

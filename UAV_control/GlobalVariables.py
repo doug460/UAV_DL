@@ -7,10 +7,11 @@ Created on Feb 19, 2018
 from math import sin, pi
 
 # path for saving stuff
-dir = '/home/dabrown/Documents/PythonData/'
+# dir = '/home/dabrown/Documents/PythonData/'
+dir = 'F:/Documents/NMSU Research Dr. Sun/Programming/Python/Data/'
 
 # speed of simulation (FPS)
-fps = 30
+fps = 1
 dt = 1/fps
 
 # limiting search radius (m)
@@ -27,7 +28,7 @@ uav_dfov = 75
 # the environment only creates a single UAV at a time
 # number of states associated with UAV for neural network
 uav_num = 1
-uav_states = 2
+uav_states = 0
 
 # define target parameters
 # speed (m/s)
