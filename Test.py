@@ -11,5 +11,6 @@ import random as rng
 if __name__ == '__main__':
     pass
 
-    test = np.zeros((5))
+    test = np.zeros((32))
+    
     print(test)

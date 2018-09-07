@@ -33,9 +33,14 @@ class Env(object):
     # target Stuff
     Tar_pos     = np.array([ 0 ])
     
-    # size of the state returned
-    StateSize   = 2
+    # size of the state returned with a buffer
+    Buffer      = 4
+    StateSize   = Size + Buffer * 2 
     
+    # track to see if goal is reached
+    # if positive goal is reached, if negative goal is not reached
+    # magnitude is inversely related to time alive
+    TrackGoals  = []
     
     
     
@@ -54,9 +59,18 @@ class Env(object):
         Env.UAV_pos[0] = rng.random() * Env.Size
         Env.Tar_pos[0] = rng.random() * Env.Size
         
+        # make sure not starting on target
+        while( np.linalg.norm( Env.UAV_pos - Env.Tar_pos ) < Env.det_radius ):
+            Env.UAV_pos[0] = rng.random() * Env.Size
+            Env.Tar_pos[0] = rng.random() * Env.Size
+        
+        # keep track of iterations
+        self.count = 0
+        
     def getState(self):
-        # state is uav_pos, target_pos
-        state = np.concatenate(( Env.UAV_pos, Env.Tar_pos ))
+        state = np.zeros( Env.StateSize )
+        state[ Env.Tar_pos + Env.Buffer ] = 1
+        state[ Env.UAV_pos + Env.Buffer ] = 1
         return state
         
         
@@ -64,6 +78,7 @@ class Env(object):
         '''
         Take a single step
         '''
+        self.count += 1
         
         terminal = False
         
@@ -89,14 +104,15 @@ class Env(object):
         if( np.linalg.norm( Env.UAV_pos - Env.Tar_pos ) < Env.det_radius ):
             reward      = 1
             terminal    = True
+            Env.TrackGoals.append( 1/self.count )
             
         elif( terminal ):
             reward = -1
+            Env.TrackGoals.append( -1/self.count )
             
         
-        # state is uav_pos, target_pos
-        state = np.concatenate(( Env.UAV_pos, Env.Tar_pos ))
-        return state, reward, terminal
+        
+        return self.getState(), reward, terminal
 
 
 

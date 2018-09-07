@@ -11,8 +11,9 @@ if __name__ == '__main__':
     pass
 
     # first Init the Env
-    env = Env()
-    cutie = Cutie(env)
+    env     = Env()
+    cutie   = Cutie     ( env )
+    cutie.train_nework  ( env )
     
     
     

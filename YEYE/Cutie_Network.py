@@ -4,9 +4,10 @@ Created on Sep 6, 2018
 @author: dabrown
 '''
 
-import tensorflow as tf
-import random as rng
-import numpy as np
+import tensorflow           as tf
+import random               as rng
+import numpy                as np
+import matplotlib.pyplot    as plt
 
 class Cutie(object):
     '''
@@ -24,10 +25,10 @@ class Cutie(object):
          # initial parameters
         self.LearningRate       = 1e-4      # learning Rate
         self.BatchSize          = 32        # size of each batch
-        self.FutureValue        = 0.90      # decay rate of future values
+        self.FutureDiscount     = 0.90      # decay rate of future values
         self.InitialEps         = 0.5       # probability of random Action
         self.FinalEps           = 0.1       # final probability of random action
-        self.TotalTrain         = 100000    # Total train iterations
+        self.TotalTrain         = 30000     # Total train iterations
         self.ReplaySize         = 2000      # Size of replay memory
         self.ReplayMem          = []        # null list for memory
         self.Explore            = 1000      # frames to explore ( anneal epsilon )
@@ -41,7 +42,7 @@ class Cutie(object):
         # populate memory
         self.popMemory(env)
         
-    def train(self, env):
+    def train_nework(self, env):
         '''
         ** Rocky Music starts playing **
         
@@ -49,24 +50,19 @@ class Cutie(object):
         '''
         
         # ------------------ all inputs ------------------------
-        s  = tf.placeholder( tf.float32,   [ None, self.StateSize ],     name='s')   # input State
-        s1 = tf.placeholder( tf.float32,   [ None, self.StateSize ],     name='s1')  # input Next State
-        r  = tf.placeholder( tf.float32,   [ None, ],                    name='r')   # input Reward
-        a  = tf.placeholder( tf.int32,     [ None, env.ActionsSize ],    name='a')   # input Action
+        s       = tf.placeholder( tf.float32,    [ None, self.StateSize ],   name='s'   )   # input State
+        a       = tf.placeholder( tf.int32,      [ None, env.ActionsSize ],  name='a'   )   # input Action
         
-        
-        # define flow of network # 
-        input  = tf.placeholder('float', [ None, self.StateSize ])
-        
-        h1     = self.newLayer( input,    self.StateSize,    self.h1Size,    True )
-        h2     = self.newLayer( h1,       self.h1Size,       self.h2Size,    True )
-        out    = self.newLayer( h2,       self.h2Size,       self.outSize,   True )
+        # define the network
+        h1     = self.newLayer( s,  self.StateSize,    self.h1Size,    True )
+        h2     = self.newLayer( h1, self.h1Size,       self.h2Size,    True )
+        out    = self.newLayer( h2, self.h2Size,       self.outSize,   True )
         
         # define Q parameters
-        Q_desired  = tf.placeholder( "float", [ None ] )
-        Q_action   = tf.reduce_sum( tf.multiply( out, a ), reduction_indices=1)
-        cost       = tf.reduce_mean( tf.square( Q_desired - Q_action )) 
-        train      = tf.train.AdamOptimizer( LEARNING_RATE ).minimize( cost )
+        Q_desired  = tf.placeholder         ( "float", [ None ], name="Q_desired" )
+        Q_action   = tf.reduce_sum          ( tf.multiply( out, tf.to_float(a) ), reduction_indices=1)
+        cost       = tf.reduce_mean         ( tf.square( Q_desired - Q_action )) 
+        train      = tf.train.AdamOptimizer ( self.LearningRate ).minimize( cost )
         
         # initialize session
         sess = tf.InteractiveSession()
@@ -82,8 +78,15 @@ class Cutie(object):
         # initialize action
         action  = np.zeros((env.ActionsSize))
         
+        # track the error
+        error = []
+        
         # run training stuff
         for iteration in range( self.TotalTrain ):
+            
+            # print progress
+            if( iteration % int( self.TotalTrain / 100 ) == 0 ):
+                print( iteration / self.TotalTrain )
             
             # zero out action
             action = np.zeros((env.ActionsSize))
@@ -97,10 +100,10 @@ class Cutie(object):
             Q = out.eval(feed_dict = {s : [ state ]})
             
             # use Q or generate random
-            if random.random() <= epsilon:
+            if rng.random() <= epsilon:
                 
-                index           = rng.randrange( env.ActionsSize )
-                action[index]   = 1
+                indx            = rng.randrange( env.ActionsSize )
+                action[indx]   = 1
                 
             else:
                 
@@ -111,14 +114,78 @@ class Cutie(object):
             state1, reward, terminal = env.step( action )
             
             # replace random index in memory list
-            index = rng.randrange( self.ReplaySize )
-            self.ReplayMem[ index ] = [ state, action, reward, state1 ]
+            indx = rng.randrange( self.ReplaySize )
+            self.ReplayMem[ indx ] = [ state, action, reward, state1, terminal]
             
-            #TODO: select mini-batch and train on it
+            # reset if terminal
+            if( terminal ):
+                env.reset()
+            
+            # get sub batch
+            batch = rng.sample( self.ReplayMem, self.BatchSize )
+            
+            s_batch     = np.zeros(( self.BatchSize, env.StateSize   ))
+            a_batch     = np.zeros(( self.BatchSize, env.ActionsSize ))
+            r_batch     = np.zeros(( self.BatchSize ))
+            s1_batch    = np.zeros(( self.BatchSize, env.StateSize ))
+            term_batch  = [] 
             
             
+            for indx in range( len( batch ) ):
+                s_batch[ indx ]  =   batch[ indx ][ 0 ] 
+                a_batch[ indx ]  =   batch[ indx ][ 1 ]
+                r_batch[ indx ]  =   batch[ indx ][ 2 ]
+                s1_batch[ indx ] =   batch[ indx ][ 3 ]
+                term_batch.append  ( batch[ indx ][ 4 ] )
+                
             
+            # get a batch of results 
+            Q_next = out.eval( feed_dict = { s : s1_batch } )
             
+            # desired Q values
+            Q_desired_batch = []
+            
+            # loop through batch to get desired Q value
+            for indx in range( len( Q_next ) ):
+                terminal = term_batch[ indx ]
+                
+                if( terminal ):
+                    Q_desired_batch.append( r_batch[ indx ])
+                    
+                else:
+                    Q_desired_batch.append( r_batch[ indx ] + self.FutureDiscount * np.max( Q_next[ indx ] ) )
+            
+            # run training step 
+            train.run(
+                        feed_dict = {
+                                    Q_desired   : Q_desired_batch,
+                                    s           : s_batch,
+                                    a           : a_batch
+                                    }
+                     )
+            
+            error.append( cost.eval(
+                                    feed_dict = {
+                                                Q_desired   : Q_desired_batch,
+                                                s           : s_batch,
+                                                a           : a_batch
+                                                }
+                                  )
+                         )
+        
+        # just a plot of the error
+        plt.figure()
+        plt.plot ( error )
+        plt.title('The error')
+        
+        # plot goals reached
+        plt.figure()
+        plt.plot ( env.TrackGoals )
+        plt.title( 'Goals and time ')
+        
+        
+        plt.show()
+        
         
     def popMemory(self, env):
         '''
@@ -138,7 +205,7 @@ class Cutie(object):
             s1, r, terminal     = env.step( a )
             
             # store in memory
-            self.ReplayMem.append([ s, a, r, s1 ])
+            self.ReplayMem.append([ s, a, r, s1, terminal ])
             
             # update state
             s = s1
@@ -149,29 +216,29 @@ class Cutie(object):
                 s = env.getState()
         
     
-    def newLayer(input, inSize, outSize, relu):
+    def newLayer(self, input, inSize, outSize, relu):
         '''
         input is the input layer
         inSize is the size of input layer
         outSize is the Size of this layer
         Relu is boolean
         '''
-        weight = weight_variable([inSize, outSize])
-        bias = bias_variable([outSize])
+        weight = self.weight_variable([ inSize, outSize ])
+        bias = self.bias_variable([outSize])
         layer = tf.matmul(input,weight) + bias
         if relu:
             layer = tf.nn.relu(layer)
             
         return layer
     
-    def weight_variable(shape):
+    def weight_variable(self, shape):
         '''
         weights for a layer of given shape
         '''
         initial = tf.truncated_normal(shape, stddev = 0.66)
         return tf.Variable(initial)
     
-    def bias_variable(shape):
+    def bias_variable(self, shape):
         '''
         add bias for all nodes in layer
         '''
