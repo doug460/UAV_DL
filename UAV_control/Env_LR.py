@@ -79,6 +79,8 @@ class Env_LR(object):
             terminal:    once time limit is reached
         '''
         
+        terminal = False
+        
         # update time
         self.time += 1
         
@@ -94,21 +96,17 @@ class Env_LR(object):
         
         # get reward
         # if within goal 
-#         if(abs(self.agent - self.goal) < self.goalRadius):
-#             reward = 1
-#         # if too far from goal
-#         elif(abs(self.agent - self.goal) > self.penaltyRadius):
-#             reward = -1
-#         else:
-#             reward = -0.01
+        if(abs(self.agent - self.goal) < self.goalRadius):
+            reward = 1
+            terminal = True
+        # if too far from goal
+        elif(abs(self.agent - self.goal) > self.penaltyRadius):
+            reward = -1
+            terminal = True
+        else:
+            reward = 0
 
-        # variable reward
-        reward = -abs(self.goal - self.agent) + self.goalRadius
-        reward = reward/100
-            
-        
-        # check terminal
-        terminal = False
+
         if(self.time > self.timeLimit):
             terminal = True
             

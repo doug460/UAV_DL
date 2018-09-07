@@ -11,12 +11,12 @@ from collections import deque
 ACTIONSnUM = 3 # number of valid actions
             # actions are [forward, left, right]
 GAMMA = 0.90 # decay rate of past observations
-OBSERVE = 30000. # timesteps to observe before training
-EXPLORE = 100000. # frames over which to anneal epsilon
+OBSERVE = 10000. # timesteps to observe before training
+EXPLORE = 10000. # frames over which to anneal epsilon
 FINAL_EPSILON = 0.1 # final value of epsilon
 INITIAL_EPSILON = 0.5 # starting value of epsilon
 REPLAY_MEMORY = 25000 # number of previous transitions to remember
-TOTAL_TRAIN = 1000000 # total number of training steps
+TOTAL_TRAIN = 50000 # total number of training steps
 BATCH = 32 # size of minibatch
 FRAME_PER_ACTION = 1
 LEARNING_RATE = 1e-4
@@ -57,9 +57,9 @@ def newLayer(input, inSize, outSize, relu):
 def trainNetwork(input, output, sess):
     # define the cost function
     a = tf.placeholder("float", [None, ACTIONSnUM])
-    y = tf.placeholder("float", [None])
+    desired_Q = tf.placeholder("float", [None])
     readout_action = tf.reduce_sum(tf.multiply(output, a), reduction_indices=1)
-    cost = tf.reduce_mean(tf.square(y - readout_action))
+    cost = tf.reduce_mean(tf.square(desired_Q - readout_action))
     train_step = tf.train.AdamOptimizer(LEARNING_RATE).minimize(cost)
 
     # open up a game state to communicate with emulator
@@ -84,7 +84,7 @@ def trainNetwork(input, output, sess):
     t = 0
     while t < TOTAL_TRAIN:
         # choose an action epsilon greedily
-        readout_t = output.eval(feed_dict={input : [s_t]})[0]
+        Q = output.eval(feed_dict={input : [s_t]})[0]
         a_t = np.zeros([ACTIONSnUM])
         action_index = 0
         if t % FRAME_PER_ACTION == 0:
@@ -92,7 +92,7 @@ def trainNetwork(input, output, sess):
                 action_index = random.randrange(ACTIONSnUM)
                 a_t[random.randrange(ACTIONSnUM)] = 1
             else:
-                action_index = np.argmax(readout_t)
+                action_index = np.argmax(Q)
                 a_t[action_index] = 1
         else:
             a_t[2] = 1 # do nothing
@@ -115,26 +115,26 @@ def trainNetwork(input, output, sess):
             minibatch = random.sample(D, BATCH)
 
             # get the batch variables
-            s_j_batch = [d[0] for d in minibatch]
+            s_batch = [d[0] for d in minibatch]
             a_batch = [d[1] for d in minibatch]
             r_batch = [d[2] for d in minibatch]
-            s_j1_batch = [d[3] for d in minibatch]
+            s1_batch = [d[3] for d in minibatch]
 
             y_batch = []
-            readout_j1_batch = output.eval(feed_dict = {input : s_j1_batch})
+            Q1 = output.eval(feed_dict = {input : s1_batch})
             for i in range(0, len(minibatch)):
                 terminal = minibatch[i][4]
                 # if terminal, only equals reward
                 if terminal:
                     y_batch.append(r_batch[i])
                 else:
-                    y_batch.append(r_batch[i] + GAMMA * np.max(readout_j1_batch[i]))
+                    y_batch.append(r_batch[i] + GAMMA * np.max(Q1[i]))
 
             # perform gradient step
             train_step.run(feed_dict = {
-                y : y_batch,
+                desired_Q : y_batch,
                 a : a_batch,
-                input : s_j_batch}
+                input : s_batch}
             )
 
         # update the old values
@@ -172,33 +172,11 @@ def trainNetwork(input, output, sess):
             # if reached goal
             if reward > 0:
                 goals = goals + 1
-                    
-                
-                 
-                
-                 
-#                 # print out actino every second
-#                 if indx % vars.fps == 0:
-#                     print('action: [%d %d %d]' % (action[0], action[1], action[2]))
                        
                        
         if t % 10000 == 0:
             print('Iteration: %7d. goals %4d losses %4d' % (t, goals,20-goals))
             goals = 0
-                
-                
-#         # print info
-#         state = ""
-#         if t <= OBSERVE:
-#             state = "observe"
-#         elif t > OBSERVE and t <= OBSERVE + EXPLORE:
-#             state = "explore"
-#         else:
-#             state = "train"
-# 
-#         print("TIMESTEP", t, "/ STATE", state, \
-#             "/ EPSILON", epsilon, "/ ACTION", action_index, "/ REWARD", r_t, \
-#             "/ Q_MAX %e" % np.argmax(readout_t))
 
 def playGame():
     sess = tf.InteractiveSession()
