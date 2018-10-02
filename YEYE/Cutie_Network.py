@@ -23,20 +23,24 @@ class Cutie(object):
         '''
         
          # initial parameters
-        self.LearningRate       = 1e-4      # learning Rate
+        self.LearningRate       = 1e-5      # learning Rate
         self.BatchSize          = 32        # size of each batch
         self.FutureDiscount     = 0.90      # decay rate of future values
         self.InitialEps         = 0.5       # probability of random Action
         self.FinalEps           = 0.1       # final probability of random action
-        self.TotalTrain         = 30000     # Total train iterations
+        self.TotalTrain         = 50000     # Total train iterations
         self.ReplaySize         = 2000      # Size of replay memory
         self.ReplayMem          = []        # null list for memory
         self.Explore            = 1000      # frames to explore ( anneal epsilon )
         
         # define state size and layer sizes
         self.StateSize  = env.StateSize
-        self.h1Size     = 30
-        self.h2Size     = 30
+        self.conv1      = 64
+        self.conv2      = 64
+        self.conv3      = 64
+        self.kernelSize = (32,32)
+        self.h1Size     = 128
+        self.h2Size     = 128
         self.outSize    = env.ActionsSize
         
         # populate memory
@@ -53,20 +57,49 @@ class Cutie(object):
         s       = tf.placeholder( tf.float32,    [ None, self.StateSize ],   name='s'   )   # input State
         a       = tf.placeholder( tf.int32,      [ None, env.ActionsSize ],  name='a'   )   # input Action
         
-        # define the network
-        h1     = self.newLayer( s,  self.StateSize,    self.h1Size,    True )
-        h2     = self.newLayer( h1, self.h1Size,       self.h2Size,    True )
-        out    = self.newLayer( h2, self.h2Size,       self.outSize,   True )
+        # define main network
+        c1      = tf.layers.conv2d(inputs = s,  filters = self.conv1, kernel_size = self.kernelSize, activation = 'relu' )
+        m1      = tf.layers.max_pooling2d(inputs = c1, pool_size = 2 )
+        
+        c2      = tf.layers.conv2d(inputs = m1, filters = self.conv2, kenrel_size = self.kernelSize, activation = 'relu' )
+        m2      = tf.layers.max_pooling2d(inputs = c2, pool_size = 2 )
+        
+        c3      = tf.layers.conv2d(inputs = m2, filters = self.conv3, kernel_size = self.kernelSize, activation = 'relu' )
+        m3      = tf.layers.max_pooling2d(inputs = c3, pool_size = 2 ) 
+        
+        h1      = self.newLayer( m3, tf.size(m3),       self.h1Size,    True  )
+        h2      = self.newLayer( h1, self.h1Size,       self.h2Size,    True  )
+        mainQ   = self.newLayer( h2, self.h2Size,       self.outSize,   False )
+        
+        # define the temp network
+        c1t     = tf.layers.conv2d(inputs = s,   filters = self.conv1, kernel_size = self.kernelSize, activation = 'relu' )
+        m1t     = tf.layers.max_pooling2d(inputs = c1t, pool_size = 2 )
+        
+        c2t     = tf.layers.conv2d(inputs = m1t, filters = self.conv2, kenrel_size = self.kernelSize, activation = 'relu' )
+        m2t     = tf.layers.max_pooling2d(inputs = c2t, pool_size = 2 )
+        
+        c3t     = tf.layers.conv2d(inputs = m2t, filters = self.conv3, kernel_size = self.kernelSize, activation = 'relu' )
+        m3t     = tf.layers.max_pooling2d(inputs = c3t, pool_size = 2 ) 
+        
+        h1t     = self.newLayer( m3t, tf.size(m3t),     self.h1Size,    True  )
+        h2t     = self.newLayer( h1t, self.h1Size,      self.h2Size,    True  )
+        tempQ   = self.newLayer( h2t, self.h2Size,      self.outSize,   False )
+        
+        
+        
         
         # define Q parameters
         Q_desired  = tf.placeholder         ( "float", [ None ], name="Q_desired" )
-        Q_action   = tf.reduce_sum          ( tf.multiply( out, tf.to_float(a) ), reduction_indices=1)
-        cost       = tf.reduce_mean         ( tf.square( Q_desired - Q_action )) 
+        mainAction = tf.reduce_sum          ( tf.multiply( mainQ, tf.to_float( a ) ), reduction_indices=1 )
+        tempAction = tf.reduce_sum          ( tf.multiply( tempQ, tf.to_float( a ) ), reduction_indices=1 )
+        cost       = tf.reduce_mean         ( tf.square( Q_desired - tempAction ) )
         train      = tf.train.AdamOptimizer ( self.LearningRate ).minimize( cost )
+        
+        
         
         # initialize session
         sess = tf.InteractiveSession()
-        sess.run(tf.global_variables_initializer())
+        sess.run( tf.global_variables_initializer() )
         
         # annealing stuff
         epsilon     = self.InitialEps
@@ -89,7 +122,7 @@ class Cutie(object):
                 print( iteration / self.TotalTrain )
             
             # zero out action
-            action = np.zeros((env.ActionsSize))
+            action = np.zeros( ( env.ActionsSize ) )
             
             # scale down epsilon
             if epsilon > self.FinalEps:
@@ -180,7 +213,15 @@ class Cutie(object):
         
         # plot goals reached
         plt.figure()
-        plt.plot ( env.TrackGoals )
+        
+        sumStep = 30
+        sumGoals = np.zeros( int( len( env.TrackGoals ) / sumStep ) + 1 )
+        
+        for indx in range( len( env.TrackGoals ) ):
+            subIndx = int( indx / sumStep )
+            sumGoals[ subIndx ] += env.TrackGoals[ indx ]
+            
+        plt.stem ( sumGoals )
         plt.title( 'Goals and time ')
         
         

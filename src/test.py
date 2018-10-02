@@ -10,10 +10,9 @@ import numpy as np
 
 
 if __name__ == '__main__':
-    array = np.zeros([1,4])
-    print(np.arange(0,np.shape(array)[0]))
-    print(np.shape(array)[1])
-
+    test = np.array([[1,2,3,4,5],[5,3,4,2,1]])
+    print(test[:, 1:3])
+    
 
 
 

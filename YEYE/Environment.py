@@ -38,8 +38,6 @@ class Env(object):
     StateSize   = Size + Buffer * 2 
     
     # track to see if goal is reached
-    # if positive goal is reached, if negative goal is not reached
-    # magnitude is inversely related to time alive
     TrackGoals  = []
     
     
@@ -104,11 +102,11 @@ class Env(object):
         if( np.linalg.norm( Env.UAV_pos - Env.Tar_pos ) < Env.det_radius ):
             reward      = 1
             terminal    = True
-            Env.TrackGoals.append( 1/self.count )
+            Env.TrackGoals.append( 1 )
             
         elif( terminal ):
             reward = -1
-            Env.TrackGoals.append( -1/self.count )
+            Env.TrackGoals.append( -1 )
             
         
         

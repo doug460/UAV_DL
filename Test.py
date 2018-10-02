@@ -11,6 +11,4 @@ import random as rng
 if __name__ == '__main__':
     pass
 
-    test = np.zeros((32))
-    
-    print(test)
+    print(3 ** 2)

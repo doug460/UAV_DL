@@ -157,7 +157,7 @@ class Environement(object):
                 reward = 0.1
             
 #             # move target
-#             target.step()
+            target.step()
             
             # three sigma of uncertainty
             # so Pathagorean and square root of variance 
